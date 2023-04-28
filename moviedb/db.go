@@ -10,9 +10,16 @@ import (
 
 type Movie struct {
 	gorm.Model
-	MovieName  string `json:"movieName" binding:"required"`
-	MovieUrl   string `json:"movieUrl" binding:"required"`
-	MovieCover string `json:"movieCover"`
+	MovieName  string `json:"movie_name" binding:"required"`
+	MovieUrl   string `json:"movie_url" binding:"required"`
+	MovieCover string `json:"movie_cover"`
+}
+
+type Page struct {
+	PageNum  int  `form:"page_num"`
+	PageSize int  `form:"page_size"`
+	Keyword  int  `form:"keyword"`
+	Desc     bool `form:"desc"`
 }
 
 var db *gorm.DB
@@ -55,18 +62,44 @@ func CreateOrUpdate(movie *Movie) {
 	var m Movie
 
 	if err := db.Where("movie_name = ?", movie.MovieName).First(&m).Error; err == nil {
-		db.Model(&m).Update("movie_url", movie.MovieUrl)
+		db.Model(&m).Updates(
+			Movie{
+				MovieUrl:   m.MovieUrl,
+				MovieCover: m.MovieCover,
+			},
+		)
 		return
 	}
 
 	db.Create(movie)
 }
 
-func GetFromName(name string) (Movie, error) {
+func GetFromName(id string) (Movie, error) {
 
 	var m Movie
 
-	if err := db.Where("movie_name = ?", name).First(&m).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	if err := db.Where("id = ?", id).First(&m).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return m, err
+		}
+
+		return m, err
+	}
+
+	return m, nil
+}
+
+func GetMovieList(p Page) ([]Movie, error) {
+
+	var m []Movie
+
+	fmt.Printf("%#v \n", p)
+
+	if err := db.Limit(p.PageSize).Offset((p.PageNum - 1) * p.PageSize).Find(&m).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return m, err
+		}
+
 		return m, err
 	}
 

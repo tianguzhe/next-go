@@ -32,10 +32,10 @@ func main() {
 		})
 	})
 
-	r.GET("/movie/:movieName", func(ctx *gin.Context) {
-		movieName := ctx.Param("movieName")
+	r.GET("/movie/id/:movieid", func(ctx *gin.Context) {
+		movieid := ctx.Param("movieid")
 
-		m, err := moviedb.GetFromName(movieName)
+		m, err := moviedb.GetFromName(movieid)
 
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
@@ -45,8 +45,41 @@ func main() {
 			return
 		}
 
-		ctx.JSON(http.StatusOK, m)
+		ctx.JSON(http.StatusOK, gin.H{
+			"code":    http.StatusOK,
+			"message": "success",
+			"data":    m,
+		})
 	})
 
-	r.Run()
+	r.GET("/movie/list", func(ctx *gin.Context) {
+
+		var p moviedb.Page
+
+		if err := ctx.ShouldBindQuery(&p); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"code":  http.StatusBadRequest,
+				"error": err.Error(),
+			})
+			return
+		}
+
+		m, err := moviedb.GetMovieList(p)
+
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"code":  http.StatusBadRequest,
+				"error": err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"code":    http.StatusOK,
+			"message": "success",
+			"data":    m,
+		})
+	})
+
+	r.Run("0.0.0.0:8000")
 }
